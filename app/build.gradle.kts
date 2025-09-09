@@ -5,11 +5,11 @@ plugins {
 }
 
 android {
-    namespace = "com.whisper.app"
+    namespace = "com.whisper.whisperandroid"
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "com.whisper.app"
+        applicationId = "com.whisper.whisperandroid"
         minSdk = 24
         targetSdk = 36
         versionCode = 1

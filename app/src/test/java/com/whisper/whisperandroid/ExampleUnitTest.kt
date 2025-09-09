@@ -1,4 +1,4 @@
-package com.whisper.app
+package com.whisper.whisperandroid
 
 import org.junit.Test
 

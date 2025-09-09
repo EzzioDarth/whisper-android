@@ -1,4 +1,4 @@
-package com.whisper.app
+package com.whisper.whisperandroid
 
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -19,6 +19,6 @@ class ExampleInstrumentedTest {
     fun useAppContext() {
         // Context of the app under test.
         val appContext = InstrumentationRegistry.getInstrumentation().targetContext
-        assertEquals("com.whisper.app", appContext.packageName)
+        assertEquals("com.whisper.whisperandroid", appContext.packageName)
     }
 }

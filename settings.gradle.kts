@@ -19,5 +19,6 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "whisper"
+rootProject.name = "whisper-android"
 include(":app")
+ 

@@ -1,4 +1,4 @@
-package com.whisper.app.ui.theme
+package com.whisper.whisperandroid.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
