@@ -1,0 +1,48 @@
+# Gradle
+# these are cache folders and submodules to be ignored 
+
+.gradle/
+**/build/
+
+# this need to be committed that why ! "not" to make sure we all have the same gradle version 
+
+!gradle/wrapper/gradle-wrapper.jar
+
+# android Studio / IntelliJ
+# IDE settings and project config files
+
+.idea/
+*.iml
+*.ipr
+*.iws
+
+# Local configuration
+# local path not needed in github
+
+local.properties
+
+# NDK / CMake
+#build output when C++ NDK used
+
+.cxx/
+.externalNativeBuild/
+
+# Capture / Logs
+#default Android studio files  such as screenshots 
+
+captures/
+*.log
+
+# Signing keys 
+#signing keys not commited for security issues
+
+*.keystore
+*.jks
+*.pem
+*.p12
+
+# OS junk files
+#OS thumbnails not needed
+
+.DS_Store
+Thumbs.db
