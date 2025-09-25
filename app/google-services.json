@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "607179341306",
+    "project_id": "whisperapp-eb845",
+    "storage_bucket": "whisperapp-eb845.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:607179341306:android:3501711eea6f3d104db843",
+        "android_client_info": {
+          "package_name": "com.whisper.whisperandroid"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBux3I13BKVc5qDpNYR64DoFLBnzzTzzkE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

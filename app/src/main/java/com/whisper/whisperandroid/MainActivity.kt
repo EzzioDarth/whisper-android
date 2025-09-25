@@ -1,47 +1,31 @@
 package com.whisper.whisperandroid
 
 import android.os.Bundle
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import com.whisper.whisperandroid.ui.login.LoginScreen
 import com.whisper.whisperandroid.ui.theme.WhisperandroidTheme
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
         setContent {
             WhisperandroidTheme {
-                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    Greeting(
-                        name = "Android",
-                        modifier = Modifier.padding(innerPadding)
+                Surface(color = MaterialTheme.colorScheme.background) {
+                    LoginScreen(
+                        onLoginSuccess = {
+                            Toast.makeText(this, "Logged in!", Toast.LENGTH_SHORT).show()
+
+                        },
+                        onGoToRegister = {
+                            Toast.makeText(this, "Go to Register (Step 1.2)", Toast.LENGTH_SHORT).show()
+                        }
                     )
                 }
             }
         }
-    }
-}
-
-@Composable
-fun Greeting(name: String, modifier: Modifier = Modifier) {
-    Text(
-        text = "Hello $name!",
-        modifier = modifier
-    )
-}
-
-@Preview(showBackground = true)
-@Composable
-fun GreetingPreview() {
-    WhisperandroidTheme {
-        Greeting("Android")
     }
 }
