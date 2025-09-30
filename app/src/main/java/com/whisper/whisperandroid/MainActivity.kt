@@ -6,7 +6,9 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
+import androidx.compose.runtime.*
 import com.whisper.whisperandroid.ui.login.LoginScreen
+import com.whisper.whisperandroid.ui.register.RegisterScreen
 import com.whisper.whisperandroid.ui.theme.WhisperandroidTheme
 
 class MainActivity : ComponentActivity() {
@@ -15,15 +17,26 @@ class MainActivity : ComponentActivity() {
         setContent {
             WhisperandroidTheme {
                 Surface(color = MaterialTheme.colorScheme.background) {
-                    LoginScreen(
-                        onLoginSuccess = {
-                            Toast.makeText(this, "Logged in!", Toast.LENGTH_SHORT).show()
+                    var showRegister by remember { mutableStateOf(false) }
 
-                        },
-                        onGoToRegister = {
-                            Toast.makeText(this, "Go to Register (Step 1.2)", Toast.LENGTH_SHORT).show()
-                        }
-                    )
+                    if (showRegister) {
+                        RegisterScreen(
+                            onRegistered = {
+                                Toast.makeText(this, "Account created! Logged in.", Toast.LENGTH_SHORT).show()
+                                // TODO: navigate to ChatScreen next (Step 1.5). For now, go back to login or stay here.
+                                showRegister = false
+                            },
+                            onGoToLogin = { showRegister = false }
+                        )
+                    } else {
+                        LoginScreen(
+                            onLoginSuccess = {
+                                Toast.makeText(this, "Logged in!", Toast.LENGTH_SHORT).show()
+                                // TODO: navigate to ChatScreen (Step 1.5)
+                            },
+                            onGoToRegister = { showRegister = true }
+                        )
+                    }
                 }
             }
         }
