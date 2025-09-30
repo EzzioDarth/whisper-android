@@ -17,28 +17,29 @@ class MainActivity : ComponentActivity() {
         setContent {
             WhisperandroidTheme {
                 Surface(color = MaterialTheme.colorScheme.background) {
-                    var showRegister by remember { mutableStateOf(false) }
 
-                    if (showRegister) {
-                        RegisterScreen(
-                            onRegistered = {
-                                Toast.makeText(this, "Account created! Logged in.", Toast.LENGTH_SHORT).show()
-                                // TODO: navigate to ChatScreen next (Step 1.5). For now, go back to login or stay here.
-                                showRegister = false
-                            },
-                            onGoToLogin = { showRegister = false }
+                    // simple screen state
+                    var screen by remember { mutableStateOf("login") }
+                    // values: "login", "register", "chat"
+
+                    when (screen) {
+                        "login" -> com.whisper.whisperandroid.ui.login.LoginScreen(
+                            onLoginSuccess = { screen = "chat" },
+                            onGoToRegister = { screen = "register" }
                         )
-                    } else {
-                        LoginScreen(
-                            onLoginSuccess = {
-                                Toast.makeText(this, "Logged in!", Toast.LENGTH_SHORT).show()
-                                // TODO: navigate to ChatScreen (Step 1.5)
-                            },
-                            onGoToRegister = { showRegister = true }
+
+                        "register" -> com.whisper.whisperandroid.ui.register.RegisterScreen(
+                            onRegistered = { screen = "chat" },
+                            onGoToLogin = { screen = "login" }
+                        )
+
+                        "chat" -> com.whisper.whisperandroid.ui.chat.ChatScreen(
+                            onBackToAuth = { screen = "login" }
                         )
                     }
                 }
             }
         }
+
     }
 }
