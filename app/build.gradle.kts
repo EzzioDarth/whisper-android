@@ -12,6 +12,10 @@ android {
     namespace = "com.whisper.whisperandroid"
     compileSdk = 36
 
+    buildFeatures{
+        buildConfig = true
+    }
+
     defaultConfig {
         applicationId = "com.whisper.whisperandroid"
         minSdk = 24
@@ -23,7 +27,12 @@ android {
     }
 
     buildTypes {
+        debug{
+           buildConfigField("boolean", "USE_PB", "true")
+        }
         release {
+            buildConfigField("boolean", "USE_PB", "true")
+
             isMinifyEnabled = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
@@ -66,4 +75,11 @@ dependencies {
     implementation(platform("com.google.firebase:firebase-bom:33.3.0"))
     implementation("com.google.firebase:firebase-auth")
     implementation("com.google.firebase:firebase-firestore")
+    implementation("com.squareup.retrofit2:retrofit:2.11.0")
+    implementation("com.squareup.retrofit2:converter-moshi:2.11.0")
+    implementation("com.squareup.okhttp3:okhttp:4.12.0")
+    implementation("com.goterl:lazysodium-android:5.1.0@aar")
+    implementation("net.java.dev.jna:jna5.13.0@aar")
+    implementation("androidx.security:security-crypto-ktx:1.1.0-alpha06")
+    implementation("net.java.dev.jna:jna:5.13.0")
 }
