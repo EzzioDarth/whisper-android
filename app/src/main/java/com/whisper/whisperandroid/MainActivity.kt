@@ -6,7 +6,9 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
+import androidx.compose.runtime.*
 import com.whisper.whisperandroid.ui.login.LoginScreen
+import com.whisper.whisperandroid.ui.register.RegisterScreen
 import com.whisper.whisperandroid.ui.theme.WhisperandroidTheme
 
 class MainActivity : ComponentActivity() {
@@ -15,17 +17,29 @@ class MainActivity : ComponentActivity() {
         setContent {
             WhisperandroidTheme {
                 Surface(color = MaterialTheme.colorScheme.background) {
-                    LoginScreen(
-                        onLoginSuccess = {
-                            Toast.makeText(this, "Logged in!", Toast.LENGTH_SHORT).show()
 
-                        },
-                        onGoToRegister = {
-                            Toast.makeText(this, "Go to Register (Step 1.2)", Toast.LENGTH_SHORT).show()
-                        }
-                    )
+                    // simple screen state
+                    var screen by remember { mutableStateOf("login") }
+                    // values: "login", "register", "chat"
+
+                    when (screen) {
+                        "login" -> com.whisper.whisperandroid.ui.login.LoginScreen(
+                            onLoginSuccess = { screen = "chat" },
+                            onGoToRegister = { screen = "register" }
+                        )
+
+                        "register" -> com.whisper.whisperandroid.ui.register.RegisterScreen(
+                            onRegistered = { screen = "chat" },
+                            onGoToLogin = { screen = "login" }
+                        )
+
+                        "chat" -> com.whisper.whisperandroid.ui.chat.ChatScreen(
+                            onBackToAuth = { screen = "login" }
+                        )
+                    }
                 }
             }
         }
+
     }
 }
