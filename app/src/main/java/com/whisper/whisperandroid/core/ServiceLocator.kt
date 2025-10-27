@@ -1,25 +1,21 @@
 package com.whisper.whisperandroid.core
 
-
 import android.app.Application
 import com.whisper.whisperandroid.BuildConfig
 import com.whisper.whisperandroid.data.ChatBackend
-import com.whisper.whisperandroid.data.pb.PocketBaseBackend
-// If you still have a Firebase backend class, import it; else keep PB only.
-//import com.whisper.whisperandroid.data.firebase.FirebaseBackend
+import com.whisper.whisperandroid.data.PocketBaseBackend
 
 object ServiceLocator {
-    private lateinit var app: Application
+    private lateinit var appRef: Application
     lateinit var backend: ChatBackend
         private set
 
     fun init(app: Application) {
-        this.app = app
+        appRef = app
         backend = if (BuildConfig.USE_PB) {
-            PocketBaseBackend(app, PbConfig.BASE)
+            PocketBaseBackend(appRef, PbConfig.BASE)
         } else {
-            // FirebaseBackend(app)
-            PocketBaseBackend(app, PbConfig.BASE) // fallback to PB if no Firebase class
+            PocketBaseBackend(appRef, PbConfig.BASE) // keep PB for now
         }
     }
 }
