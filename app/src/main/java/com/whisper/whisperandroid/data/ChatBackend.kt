@@ -15,7 +15,10 @@ data class ChatMessage(
 )
 
 interface ChatBackend {
+    val token: String?
+    val currentUser: PbUser?
     suspend fun login(email: String, password: String): UserSession
     suspend fun ensureKeypairAndUploadPubKey()
+    fun signOut()
     // keep the rest minimal for now so we compile
 }

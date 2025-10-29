@@ -21,20 +21,27 @@ class PocketBaseBackend(
 
     private val api = retrofit.create(PbServices::class.java)
 
-    @Volatile private var token: String? = null
-    @Volatile private var me: PbUser? = null
+    @Volatile private var _token: String? = null
+    @Volatile private var _me: PbUser? = null
+
+    override val token: String? get() = _token
+    override  val currentUser: PbUser? get() = _me
 
     override suspend fun login(email: String, password: String): UserSession {
         // PocketBase expects "identity" + "password"
         val body = api.auth(PbAuthReq(identity = email, password = password))
-        token = body.token
-        me = body.record
+        _token = body.token
+        _me = body.record
         return UserSession(userId = body.record.id, token = body.token)
     }
 
 
     override suspend fun ensureKeypairAndUploadPubKey() {
         // no-op for now; just compile. We’ll add keygen/upload next step.
+    }
+    override fun signOut() {
+        _token = null
+        _me = null
     }
 }
 
