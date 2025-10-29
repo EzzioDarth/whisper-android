@@ -1,45 +1,39 @@
 package com.whisper.whisperandroid
 
 import android.os.Bundle
-import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
-import androidx.compose.runtime.*
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
+import com.whisper.whisperandroid.core.ServiceLocator
+import com.whisper.whisperandroid.ui.chat.ChatScreen
 import com.whisper.whisperandroid.ui.login.LoginScreen
-import com.whisper.whisperandroid.ui.register.RegisterScreen
-import com.whisper.whisperandroid.ui.theme.WhisperandroidTheme
+import com.whisper.whisperandroid.ui.theme.WhisperTheme
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        ServiceLocator.init(application)
+
         setContent {
-            WhisperandroidTheme {
+            WhisperTheme {
                 Surface(color = MaterialTheme.colorScheme.background) {
-
-                    // simple screen state
-                    var screen by remember { mutableStateOf("login") }
-                    // values: "login", "register", "chat"
-
-                    when (screen) {
-                        "login" -> com.whisper.whisperandroid.ui.login.LoginScreen(
-                            onLoginSuccess = { screen = "chat" },
-                            onGoToRegister = { screen = "register" }
-                        )
-
-                        "register" -> com.whisper.whisperandroid.ui.register.RegisterScreen(
-                            onRegistered = { screen = "chat" },
-                            onGoToLogin = { screen = "login" }
-                        )
-
-                        "chat" -> com.whisper.whisperandroid.ui.chat.ChatScreen(
-                            onBackToAuth = { screen = "login" }
-                        )
+                    val nav = rememberNavController()
+                    NavHost(navController = nav, startDestination = "login") {
+                        composable("login") {
+                            LoginScreen(
+                                onLoginSuccess = { nav.navigate("chat") },
+                                onGoToRegister = { /* we'll wire later */ }
+                            )
+                        }
+                        composable("chat") { ChatScreen() }
+                        // composable("register") { RegisterScreen(onRegisterSuccess = { nav.navigate("chat") }) }
                     }
                 }
             }
         }
-
     }
 }
