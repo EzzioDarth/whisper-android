@@ -29,7 +29,12 @@ class MainActivity : ComponentActivity() {
                                 onGoToRegister = { /* we'll wire later */ }
                             )
                         }
-                        composable("chat") { ChatScreen() }
+                        composable("chat") {
+                            ChatScreen(
+                                onBackToAuth = {
+                                    nav.popBackStack()
+                                }
+                            ) }
                         // composable("register") { RegisterScreen(onRegisterSuccess = { nav.navigate("chat") }) }
                     }
                 }
