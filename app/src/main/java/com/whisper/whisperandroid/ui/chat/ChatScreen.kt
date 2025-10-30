@@ -11,7 +11,8 @@ import com.whisper.whisperandroid.core.PbConfig
 
 @Composable
 fun ChatScreen(
-    onBackToAuth: () -> Unit = {}
+    onBackToAuth: () -> Unit = {},
+    onStartNewChat: () -> Unit = {}
 ) {
     // Access the current PocketBase session
     val backend = ServiceLocator.backend

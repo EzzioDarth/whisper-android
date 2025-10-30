@@ -12,6 +12,7 @@ import com.whisper.whisperandroid.core.ServiceLocator
 import com.whisper.whisperandroid.ui.chat.ChatScreen
 import com.whisper.whisperandroid.ui.login.LoginScreen
 import com.whisper.whisperandroid.ui.theme.WhisperTheme
+import com.whisper.whisperandroid.ui.contacts.ContactsScreen
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -31,11 +32,25 @@ class MainActivity : ComponentActivity() {
                         }
                         composable("chat") {
                             ChatScreen(
-                                onBackToAuth = {
-                                    nav.popBackStack()
-                                }
+                                onBackToAuth = { nav.popBackStack()},
+                                onStartNewChat = { nav.navigate("contacts")}
+
                             ) }
                         // composable("register") { RegisterScreen(onRegisterSuccess = { nav.navigate("chat") }) }
+
+
+                        composable("contacts") {
+                            ContactsScreen(
+                                onBack = { nav.popBackStack() },
+                                onSelectContact = { selected ->
+                                    // TODO: open or create a chat with `selected.id`
+                                    // nav.navigate("chat/${selected.id}")
+                                    nav.popBackStack() // for now, just go back to ChatScreen
+                                }
+                            )
+                        }
+
+
                     }
                 }
             }
