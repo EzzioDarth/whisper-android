@@ -1,10 +1,13 @@
 package com.whisper.whisperandroid.data
 
+import com.google.api.Page
 import retrofit2.http.Body
 import retrofit2.http.Header
 import retrofit2.http.PATCH
 import retrofit2.http.POST
 import retrofit2.http.Path
+import retrofit2.http.GET
+import retrofit2.http.Query
 
 interface PbServices {
 
@@ -25,4 +28,12 @@ interface PbServices {
         @Header("Authorization") bearer: String,
         @Body body: Map<String, String>
     ): PbRecordId
+    @GET("/api/collections/users/records")
+    suspend fun listUsers(
+        @Header("Autorization") bearer: String,
+        @Query("page") page: Int = 1,
+        @Query("perPage") perPage: Int = 50,
+        @Query("filter") filter: String? = null
+    ): PbListResp<PbUser>
+
 }

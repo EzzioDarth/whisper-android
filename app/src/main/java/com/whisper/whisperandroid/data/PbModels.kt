@@ -17,5 +17,11 @@ data class PbAuthResp(
     val token: String,
     val record: PbUser
 )
+data class PbListResp<T>(
+    val page: Int,
+    val perPage: Int,
+    val totalItems: Int,
+    val items: List<T>
+)
 
 data class PbRecordId(val id: String)

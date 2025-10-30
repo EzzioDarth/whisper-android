@@ -1,5 +1,8 @@
 package com.whisper.whisperandroid.data
 
+import com.google.api.Page
+import retrofit2.http.Query
+
 data class UserSession(
     val userId: String,
     val token: String
@@ -21,4 +24,5 @@ interface ChatBackend {
     suspend fun ensureKeypairAndUploadPubKey()
     fun signOut()
     // keep the rest minimal for now so we compile
+    suspend fun listContacts(query: String? = null, page: Int = 1, perPage: Int = 50): List<PbUser>
 }
