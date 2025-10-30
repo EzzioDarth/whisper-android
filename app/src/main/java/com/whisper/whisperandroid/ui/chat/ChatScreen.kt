@@ -52,6 +52,10 @@ fun ChatScreen(
                 text = "Hello, $who",
                 style = MaterialTheme.typography.bodyMedium
             )
+            Spacer(Modifier.height(24.dp))
+            Button(onClick = onStartNewChat) {
+                Text("Start new chat")
+            }
             Spacer(Modifier.height(12.dp))
             Text(
                 text = "PocketBase connection active.\n" +
