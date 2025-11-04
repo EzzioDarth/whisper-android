@@ -54,7 +54,7 @@ fun ContactsScreen(
             IconButton(onClick = onBack) {              
                 Icon(Icons.Default.ArrowBack, contentDescription = "Back")
             }
-            Text("Contacts", style = MaterialTheme.typography.headlineSmall)
+            Text("Messages", style = MaterialTheme.typography.headlineSmall)
         }
 
         Spacer(Modifier.height(12.dp))
