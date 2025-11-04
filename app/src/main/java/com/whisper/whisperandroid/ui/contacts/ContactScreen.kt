@@ -2,19 +2,18 @@ package com.whisper.whisperandroid.ui.contacts
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.whisper.whisperandroid.core.ServiceLocator
 import com.whisper.whisperandroid.data.PbUser
 import kotlinx.coroutines.launch
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
-import  androidx.compose.ui.Alignment
 
 @Composable
 fun ContactsScreen(
@@ -27,6 +26,7 @@ fun ContactsScreen(
     var loading by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
     var users by remember { mutableStateOf<List<PbUser>>(emptyList()) }
+    var showAddDialog by remember { mutableStateOf(false) }
 
     fun load() {
         loading = true
@@ -42,23 +42,31 @@ fun ContactsScreen(
         }
     }
 
-    // Initial load
     LaunchedEffect(Unit) { load() }
 
     Column(Modifier.fillMaxSize().padding(16.dp)) {
+
+        // Top bar with back and "Add by email"
         Row(
             Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.Start,
+            horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            IconButton(onClick = onBack) {              
-                Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                IconButton(onClick = onBack) {
+                    Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                }
+                Text("Messages", style = MaterialTheme.typography.headlineSmall)
             }
-            Text("Messages", style = MaterialTheme.typography.headlineSmall)
+            TextButton(onClick = { showAddDialog = true }) {
+                Text("Add by email")
+            }
         }
 
         Spacer(Modifier.height(12.dp))
-        Row(Modifier.fillMaxWidth(),
+
+        Row(
+            Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             OutlinedTextField(
@@ -77,11 +85,37 @@ fun ContactsScreen(
 
         error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
 
+        if (users.isEmpty() && !loading && error == null) {
+            Text("No contacts found", style = MaterialTheme.typography.bodyMedium)
+        }
+
         LazyColumn(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             items(users) { u ->
                 ContactRow(user = u, onClick = { onSelectContact(u) })
             }
         }
+    }
+
+    // Add by email dialog
+    if (showAddDialog) {
+        AddByEmailDialog(
+            onDismiss = { showAddDialog = false },
+            onConfirm = { email ->
+                showAddDialog = false
+                scope.launch {
+                    try {
+                        val u = ServiceLocator.backend.findUserByEmail(email.trim())
+                        if (u != null) {
+                            onSelectContact(u)
+                        } else {
+                            error = "No user found with that email."
+                        }
+                    } catch (e: Exception) {
+                        error = e.localizedMessage ?: "Lookup failed"
+                    }
+                }
+            }
+        )
     }
 }
 
@@ -93,9 +127,7 @@ private fun ContactRow(user: PbUser, onClick: () -> Unit) {
         !user.email.isNullOrBlank() -> user.email
         else -> user.id
     }
-    Card(
-        Modifier.fillMaxWidth().clickable { onClick() }
-    ) {
+    Card(Modifier.fillMaxWidth().clickable { onClick() }) {
         Column(Modifier.padding(12.dp)) {
             Text(title, style = MaterialTheme.typography.titleMedium)
             if (!user.email.isNullOrBlank()) {
@@ -103,4 +135,30 @@ private fun ContactRow(user: PbUser, onClick: () -> Unit) {
             }
         }
     }
+}
+
+@Composable
+private fun AddByEmailDialog(
+    onDismiss: () -> Unit,
+    onConfirm: (String) -> Unit
+) {
+    var email by remember { mutableStateOf("") }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Add by email") },
+        text = {
+            OutlinedTextField(
+                value = email,
+                onValueChange = { email = it },
+                label = { Text("Email") },
+                singleLine = true
+            )
+        },
+        confirmButton = {
+            TextButton(onClick = { onConfirm(email) }, enabled = email.isNotBlank()) {
+                Text("Find")
+            }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } }
+    )
 }

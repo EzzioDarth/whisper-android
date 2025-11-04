@@ -1,14 +1,14 @@
 package com.whisper.whisperandroid.data
 
 import android.content.Context
-import com.google.api.Page
+
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import okhttp3.OkHttpClient
 import retrofit2.Retrofit
 import retrofit2.converter.moshi.MoshiConverterFactory
-import retrofit2.http.Query
-import retrofit2.Response.error
+
+
 
 class PocketBaseBackend(
     private val appCtx: Context,
@@ -48,7 +48,7 @@ class PocketBaseBackend(
     }
     override suspend fun listContacts(query: String?, page: Int,
                                       perPage: Int): List<PbUser> {
-        val t = token ?: error("Not authenticated")
+        val t = token ?: throw IllegalStateException("Not authenticated")
         val meId = currentUser?.id
         val baseFilter = if (meId != null) """id != "$meId"""" else null
         val searchFilter = query?.takeIf { it.isNotBlank() }?.let { q ->
@@ -57,14 +57,76 @@ class PocketBaseBackend(
         val finalFilter = listOfNotNull(baseFilter,
             searchFilter).joinToString(" && ").ifBlank {null}
         val resp = api.listUsers(
-            bearer = "Bearer $t",
-            page = page,
-            perPage =perPage,
-            filter = finalFilter
+            "Bearer $t",
+            page,
+            perPage,
+            finalFilter
         )
         return resp.items
 
     }
+    override suspend fun findUserByEmail(email: String): PbUser? {
+        val t = token ?: throw IllegalStateException("Not authenticated")
+        val resp = api.listUsers(
+            "Bearer $t",
+            1,
+            1,
+            """email="$email""""
+        )
+        return resp.items.firstOrNull()
+    }
+
+    private fun roomPairKey(a: String, b: String): String {
+        return if (a < b) "${a}_${b}" else "${b}_${a}"
+    }
+
+    override suspend fun openOrCreateDirectRoom(peerId: String): PbRoom {
+        val t = token ?: error("Not authenticated")
+        val meId = currentUser?.id ?: error("No current user")
+        val key = roomPairKey(meId, peerId)
+
+        // Try to find existing room
+        val found = api.listRooms(
+            "Bearer $t",
+            """pairKey="$key""""
+        ).items.firstOrNull()
+        if (found != null) return found
+
+        // Create new room
+        return api.createRoom(
+            "Bearer $t",
+            mapOf(
+                "pairKey" to key,
+                "type" to "direct",
+                "aId" to meId,
+                "bId" to peerId
+            )
+        )
+    }
+
+    override suspend fun listMessages(roomId: String): List<PbMessage> {
+        val t = token ?: throw IllegalStateException("Not authenticated")
+        return api.listMessages(
+            "Bearer $t",
+            """roomId="$roomId"""",
+            "created"
+        ).items
+    }
+
+    override suspend fun sendMessage(roomId: String, ciphertext: String, nonce: String?): PbMessage {
+        val t = token ?: throw IllegalStateException("Not authenticated")
+        val meId = currentUser?.id ?: throw IllegalStateException("No current user")
+        return api.sendMessage(
+            bearer = "Bearer $t",
+            body = mapOf(
+                "roomId" to roomId,
+                "senderId" to meId,
+                "ciphertext" to ciphertext,
+                "nonce" to nonce
+            )
+        )
+    }
+
 }
 
 private fun String.ensureEndsWithSlash() = if (endsWith("/")) this else this + "/"

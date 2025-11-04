@@ -23,6 +23,10 @@ interface ChatBackend {
     suspend fun login(email: String, password: String): UserSession
     suspend fun ensureKeypairAndUploadPubKey()
     fun signOut()
-    // keep the rest minimal for now so we compile
+
     suspend fun listContacts(query: String? = null, page: Int = 1, perPage: Int = 50): List<PbUser>
+    suspend fun findUserByEmail(email: String): PbUser?
+    suspend fun openOrCreateDirectRoom(peerId: String): PbRoom
+    suspend fun listMessages(roomId: String): List<PbMessage>
+    suspend fun sendMessage(roomId: String, ciphertext: String, nonce: String? = null): PbMessage
 }

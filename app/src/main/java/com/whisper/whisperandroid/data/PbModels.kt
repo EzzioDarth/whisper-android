@@ -23,5 +23,19 @@ data class PbListResp<T>(
     val totalItems: Int,
     val items: List<T>
 )
-
+data class PbRoom(
+    val id: String,
+    val pairKey: String,
+    val type: String? = null,
+    val aId: String? = null,
+    val bId: String? = null
+)
+data class PbMessage(
+    val id: String,
+    val roomId: String,
+    val SenderIdval : String,
+    val ciphertext: String,
+    val none: String?,
+    val created: String
+)
 data class PbRecordId(val id: String)
