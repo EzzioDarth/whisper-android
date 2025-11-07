@@ -56,7 +56,7 @@ fun ContactsScreen(
                 IconButton(onClick = onBack) {
                     Icon(Icons.Default.ArrowBack, contentDescription = "Back")
                 }
-                Text("Messages", style = MaterialTheme.typography.headlineSmall)
+                Text("Contacts", style = MaterialTheme.typography.headlineSmall)
             }
             TextButton(onClick = { showAddDialog = true }) {
                 Text("Add by email")

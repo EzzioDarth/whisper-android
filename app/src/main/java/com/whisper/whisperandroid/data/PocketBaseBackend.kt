@@ -81,52 +81,62 @@ class PocketBaseBackend(
     }
 
     override suspend fun openOrCreateDirectRoom(peerId: String): PbRoom {
-        val t = token ?: error("Not authenticated")
-        val meId = currentUser?.id ?: error("No current user")
-        val key = roomPairKey(meId, peerId)
+    val t = token ?: error("Not authenticated")
+    val meId = currentUser?.id ?: error("No current user")
+    val pairKey = if (meId < peerId) "${meId}_${peerId}" else "${peerId}_${meId}"
 
-        // Try to find existing room
-        val found = api.listRooms(
-            "Bearer $t",
-            """pairKey="$key""""
-        ).items.firstOrNull()
-        if (found != null) return found
+    // Try to find existing room
+    val existing = api.listRooms(
+        "Bearer $t",
+        """pairKey="$pairKey""""
+    ).items.firstOrNull()
+    if (existing != null) return existing
 
-        // Create new room
-        return api.createRoom(
-            "Bearer $t",
-            mapOf(
-                "pairKey" to key,
-                "type" to "direct",
-                "aId" to meId,
-                "bId" to peerId
-            )
-        )
-    }
+    // Create a new room
+    val body: Map<String, Any> = mapOf(
+        "pairKey" to pairKey,
+        "type" to "direct",
+        "aId" to meId,
+        "bId" to peerId,
+        "createdBy" to meId
+    )
+
+    return api.createRoom("Bearer $t", body)
+}
+
+
 
     override suspend fun listMessages(roomId: String): List<PbMessage> {
         val t = token ?: throw IllegalStateException("Not authenticated")
-        return api.listMessages(
+        val meId = currentUser?.id ?: IllegalStateException("No current user")
+	val filter = """room.id = "$roomId" && (room.aId.id = "$meId" || room.bId.id = "$meId")"""
+        val resp = api.listMessages(
             "Bearer $t",
-            """roomId="$roomId"""",
+            filter,
             "created"
-        ).items
+        )
+	return resp.items
     }
 
     override suspend fun sendMessage(roomId: String, ciphertext: String, nonce: String?): PbMessage {
-        val t = token ?: throw IllegalStateException("Not authenticated")
-        val meId = currentUser?.id ?: throw IllegalStateException("No current user")
-        return api.sendMessage(
-            bearer = "Bearer $t",
-            body = mapOf(
-                "roomId" to roomId,
-                "senderId" to meId,
-                "ciphertext" to ciphertext,
-                "nonce" to nonce
-            )
-        )
-    }
+    val t = token ?: error("Not authenticated")
+    val meId = currentUser?.id ?: error("No current user")
+
+    val safeNonce = nonce ?: "none"
+    val algo = "plaintext"
+
+    val body: Map<String, Any> = mapOf(
+        "room" to roomId,
+        "sender" to meId,
+        "ciphertext" to ciphertext,
+        "nonce" to safeNonce,
+        "algo" to algo
+    )
+
+    return api.sendMessage("Bearer $t", body)
+}
+
 
 }
 
-private fun String.ensureEndsWithSlash() = if (endsWith("/")) this else this + "/"
+private fun String.ensureEndsWithSlash(): String = if (endsWith("/")) this else this + "/"

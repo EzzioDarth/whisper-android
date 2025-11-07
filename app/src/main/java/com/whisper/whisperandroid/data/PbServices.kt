@@ -37,15 +37,15 @@ interface PbServices {
         @Query("filter") filter: String? = null
     ): PbListResp<PbUser>
     //rooms
-    @GET("/api/collections/rooms/records")
+    @GET("/api/collections/chat_rooms/records")
     suspend fun listRooms(
         @Header("Authorization") bearer: String,
         @Query("filter") filter: String
     ): PbListResp<PbRoom>
-    @POST("/api/collections/rooms/records")
+    @POST("/api/collections/chat_rooms/records")
     suspend fun createRoom(
         @Header("Authorization") bearer: String,
-        @Body body: Map<String, Any?>
+        @Body body: Map<String, Any>
     ): PbRoom
     //messages
     @GET("/api/collections/messages/records")
@@ -57,7 +57,7 @@ interface PbServices {
     @POST("/api/collections/messages/records")
     suspend fun sendMessage(
         @Header("Authorization") bearer: String,
-        @Body body: Map<String, Any?>
+        @Body body: Map<String, Any>
     ): PbMessage
 
 }

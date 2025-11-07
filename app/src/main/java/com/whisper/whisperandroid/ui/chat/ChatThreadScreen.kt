@@ -23,26 +23,19 @@ fun ChatThreadScreen(
     var roomId by remember { mutableStateOf<String?>(null) }
     var messages by remember { mutableStateOf<List<PbMessage>>(emptyList()) }
     var input by remember { mutableStateOf("") }
-    var loading by remember { mutableStateOf(true) }
     var error by remember { mutableStateOf<String?>(null) }
 
-    fun loadAll() {
+    LaunchedEffect(peerId) {
         scope.launch {
             try {
-                loading = true
-                error = null
                 val room = backend.openOrCreateDirectRoom(peerId)
                 roomId = room.id
                 messages = backend.listMessages(room.id)
             } catch (e: Exception) {
                 error = e.localizedMessage ?: "Failed to open chat"
-            } finally {
-                loading = false
             }
         }
     }
-
-    LaunchedEffect(peerId) { loadAll() }
 
     Column(Modifier.fillMaxSize().padding(12.dp)) {
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -50,19 +43,13 @@ fun ChatThreadScreen(
             Text("Chat", style = MaterialTheme.typography.headlineSmall)
         }
 
-        if (error != null) {
-            Text(error!!, color = MaterialTheme.colorScheme.error)
-        }
-
-        Spacer(Modifier.height(8.dp))
+        error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
 
         LazyColumn(Modifier.weight(1f)) {
             items(messages) { m ->
-                Text(m.ciphertext) // TEMP: plaintext; replace with decrypted text later
+                Text(m.ciphertext) // plaintext for now
             }
         }
-
-        Spacer(Modifier.height(8.dp))
 
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             OutlinedTextField(
@@ -73,24 +60,21 @@ fun ChatThreadScreen(
                 label = { Text("Message") }
             )
             Button(
+                enabled = roomId != null && input.isNotBlank(),
                 onClick = {
                     val rid = roomId ?: return@Button
                     scope.launch {
                         try {
-                            val sent = backend.sendMessage(
-                                roomId = rid,
-                                ciphertext = input,     // TEMP: no encryption
-                                nonce = null
-                            )
+                            val sent = backend.sendMessage(rid, input, null)
                             input = ""
                             messages = messages + sent
                         } catch (e: Exception) {
                             error = e.localizedMessage ?: "Send failed"
                         }
                     }
-                },
-                enabled = !loading && input.isNotBlank()
+                }
             ) { Text("Send") }
         }
     }
 }
+

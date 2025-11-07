@@ -13,6 +13,8 @@ import com.whisper.whisperandroid.ui.chat.ChatScreen
 import com.whisper.whisperandroid.ui.login.LoginScreen
 import com.whisper.whisperandroid.ui.theme.WhisperTheme
 import com.whisper.whisperandroid.ui.contacts.ContactsScreen
+import com.whisper.whisperandroid.ui.chat.ChatThreadScreen
+
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -43,11 +45,17 @@ class MainActivity : ComponentActivity() {
                             ContactsScreen(
                                 onBack = { nav.popBackStack() },
                                 onSelectContact = { selected ->
-                                    // TODO: open or create a chat with `selected.id`
-                                    // nav.navigate("chat/${selected.id}")
-                                    nav.popBackStack() // for now, just go back to ChatScreen
+                                    
+                                    nav.navigate("thread/${selected.id}") //to chat with user
                                 }
                             )
+                        }
+                        composable("thread/{peerId}") { backStackEntry -> 
+                        val peerId = backStackEntry.arguments?.getString("peerId") ?: return@composable
+                        	ChatThreadScreen(
+                        		peerId = peerId,
+                        		onBack = {nav.popBackStack()}
+                        	)
                         }
 
 
