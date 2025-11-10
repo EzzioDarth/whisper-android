@@ -32,10 +32,10 @@ data class PbRoom(
 )
 data class PbMessage(
     val id: String,
-    val roomId: String,
-    val SenderIdval : String,
+    val room: String,
+    val sender : String,
     val ciphertext: String,
-    val none: String?,
+    val nonce: String?,
     val created: String
 )
 data class PbRecordId(val id: String)

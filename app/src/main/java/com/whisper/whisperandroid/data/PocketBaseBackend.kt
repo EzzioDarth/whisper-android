@@ -129,7 +129,7 @@ class PocketBaseBackend(
         "room" to roomId,
         "sender" to meId,
         "ciphertext" to ciphertext,
-        "nonce" to safeNonce,
+        "nonce" to (nonce ?: "none "),
         "algo" to algo
     )
 

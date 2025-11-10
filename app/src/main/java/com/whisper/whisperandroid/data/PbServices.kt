@@ -9,6 +9,7 @@ import retrofit2.http.POST
 import retrofit2.http.Path
 import retrofit2.http.GET
 import retrofit2.http.Query
+import kotlin.jvm.JvmSuppressWildcards
 
 interface PbServices {
 
@@ -20,7 +21,7 @@ interface PbServices {
     @PATCH("/api/collections/users/records/{id}")
     suspend fun updateUser(
         @Path("id") id: String,
-        @Body body: Map<String, Any>
+        @Body body: Map<String, @JvmSuppressWildcards Any>
     ): PbUser
 
     // Register a device token (example)
@@ -45,7 +46,7 @@ interface PbServices {
     @POST("/api/collections/chat_rooms/records")
     suspend fun createRoom(
         @Header("Authorization") bearer: String,
-        @Body body: Map<String, Any>
+        @Body body: Map<String, @JvmSuppressWildcards Any>
     ): PbRoom
     //messages
     @GET("/api/collections/messages/records")
@@ -57,7 +58,7 @@ interface PbServices {
     @POST("/api/collections/messages/records")
     suspend fun sendMessage(
         @Header("Authorization") bearer: String,
-        @Body body: Map<String, Any>
+        @Body body: Map<String, @JvmSuppressWildcards Any>
     ): PbMessage
 
 }
