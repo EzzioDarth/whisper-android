@@ -24,6 +24,9 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import java.time.OffsetDateTime
 import java.time.format.DateTimeParseException
+import org.json.JSONObject
+import com.whisper.whisperandroid.data.Crypto
+import androidx.compose.foundation.layout.Arrangement
 
 @Composable
 fun ChatThreadScreen(
@@ -31,15 +34,15 @@ fun ChatThreadScreen(
     onBack: () -> Unit
 ) {
     val backend = ServiceLocator.backend
+    val realtime = ServiceLocator.realtime
     val scope = rememberCoroutineScope()
     val meId = backend.currentUser?.id
+    val listState = rememberLazyListState()
 
     var roomId by remember { mutableStateOf<String?>(null) }
     var messages by remember { mutableStateOf<List<PbMessage>>(emptyList()) }
     var input by remember { mutableStateOf("") }
     var error by remember { mutableStateOf<String?>(null) }
-
-    val listState = rememberLazyListState()
 
     // Open (or get) the direct room, then initial load
     LaunchedEffect(peerId) {
@@ -52,22 +55,47 @@ fun ChatThreadScreen(
         }
     }
 
-    // Poll for new messages every 2 seconds (simple realtime)
+    // Poll for new messages every 2 seconds (fallback)
     LaunchedEffect(roomId) {
         val rid = roomId ?: return@LaunchedEffect
         while (isActive) {
             try {
-                messages = backend.listMessages(rid)
-            } catch (_: Exception) { /* keep UI alive */ }
+                val fresh = backend.listMessages(rid)
+                val known = messages.associateBy { it.id }
+                messages = (messages + fresh.filter { it.id !in known }).distinctBy { it.id }
+            } catch (_: Exception) {}
             delay(2000)
         }
     }
 
+    // Realtime subscription for this room
+    LaunchedEffect(roomId) {
+        val rid = roomId ?: return@LaunchedEffect
+        realtime.connect()
+        realtime.subscribeRoomMessages(rid) { rec: JSONObject ->
+            val m = PbMessage(
+                id = rec.optString("id"),
+                room = rec.optString("roomId", rec.optString("room")),
+                sender = rec.optString("senderId", rec.optString("sender")),
+                ciphertext = rec.optString("ciphertext"),
+                nonce = rec.optString("nonce"),
+                algo = rec.optString("algo"),
+                created = rec.optString("created")
+            )
+            androidx.compose.runtime.snapshots.Snapshot.withMutableSnapshot {
+                if (messages.none { it.id == m.id }) messages = messages + m
+            }
+        }
+    }
+
+    // Unsubscribe when leaving this screen
+    DisposableEffect(roomId) {
+        onDispose { roomId?.let { realtime.unsubscribeRoom(it) } }
+    }
+
     // Auto-scroll to bottom on new message
     LaunchedEffect(messages.size) {
-        if (messages.isNotEmpty()) {
-            listState.animateScrollToItem(messages.lastIndex)
-        }
+        if (messages.isNotEmpty()) listState.animateScrollToItem(messages.lastIndex)
     }
 
     Column(Modifier.fillMaxSize()) {
@@ -94,7 +122,6 @@ fun ChatThreadScreen(
             )
         }
 
-        // Messages list with bubbles
         LazyColumn(
             state = listState,
             modifier = Modifier
@@ -104,8 +131,23 @@ fun ChatThreadScreen(
         ) {
             items(messages, key = { it.id }) { m ->
                 val isMe = (m.sender == meId)
+
+                // Decrypt for display if needed
+                val displayText = remember(m.id, m.ciphertext, m.nonce, m.algo) {
+                    val algo = m.algo ?: "plaintext"
+                    val hasNonce = !m.nonce.isNullOrBlank() && m.nonce != "none"
+                    if (algo == "xchacha20poly1305" && hasNonce && meId != null) {
+                        runCatching {
+                            val key = Crypto.deriveRoomKey(meId, peerId)
+                            Crypto.decryptXChaCha(m.ciphertext, m.nonce!!, key)
+                        }.getOrElse { "[decryption failed]" }
+                    } else {
+                        m.ciphertext
+                    }
+                }
+
                 MessageBubble(
-                    text = m.ciphertext,
+                    text = displayText,
                     time = prettyTime(m.created),
                     isMe = isMe
                 )
@@ -113,7 +155,6 @@ fun ChatThreadScreen(
             }
         }
 
-        // Input row
         Row(
             Modifier
                 .fillMaxWidth()
@@ -130,16 +171,21 @@ fun ChatThreadScreen(
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Send),
                 keyboardActions = KeyboardActions(
                     onSend = {
-                        val rid = roomId
-                        if (!input.isBlank() && rid != null) {
-                            scope.launch {
-                                try {
-                                    val sent = backend.sendMessage(rid, input, null)
-                                    input = ""
-                                    messages = messages + sent
-                                } catch (e: Exception) {
-                                    error = e.localizedMessage ?: "Send failed"
-                                }
+                        val rid = roomId ?: return@KeyboardActions
+                        val me  = meId   ?: return@KeyboardActions
+                        if (input.isBlank()) return@KeyboardActions
+
+                        
+
+                        scope.launch {
+                            try {
+                            	val key = Crypto.deriveRoomKey(me, peerId)
+                        	val (ct, nonceB64) = Crypto.encryptXChaCha(input, key)
+                                val sent = backend.sendMessage(rid, ct, nonceB64)
+                                input = ""
+                                messages = messages + sent
+                            } catch (e: Exception) {
+                                error = e.localizedMessage ?: "Send failed"
                             }
                         }
                     }
@@ -150,9 +196,15 @@ fun ChatThreadScreen(
                 enabled = canSend,
                 onClick = {
                     val rid = roomId ?: return@Button
+                    val me  = meId   ?: return@Button
+                    if (input.isBlank()) return@Button
+
+                    val key = Crypto.deriveRoomKey(me, peerId)
+                    val (ct, nonceB64) = Crypto.encryptXChaCha(input, key)
+
                     scope.launch {
                         try {
-                            val sent = backend.sendMessage(rid, input, null)
+                            val sent = backend.sendMessage(rid, ct, nonceB64)
                             input = ""
                             messages = messages + sent
                         } catch (e: Exception) {

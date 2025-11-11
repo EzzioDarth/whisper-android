@@ -7,6 +7,8 @@ import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import okhttp3.OkHttpClient
 import retrofit2.Retrofit
 import retrofit2.converter.moshi.MoshiConverterFactory
+import okhttp3.logging.HttpLoggingInterceptor
+
 
 
 
@@ -16,10 +18,16 @@ class PocketBaseBackend(
 ) : ChatBackend {
 
     private val moshi = Moshi.Builder().add(KotlinJsonAdapterFactory()).build()
+    private val logger: HttpLoggingInterceptor = HttpLoggingInterceptor().apply {
+    level = HttpLoggingInterceptor.Level.BODY
+}
+    private val client: OkHttpClient = OkHttpClient.Builder()
+    .addInterceptor(logger) // type is Interceptor, so no ambiguity now
+    .build()
     private val retrofit = Retrofit.Builder()
         .baseUrl(baseUrl.ensureEndsWithSlash())
         .addConverterFactory(MoshiConverterFactory.create(moshi))
-        .client(OkHttpClient())
+        .client(client)
         .build()
 
     private val api = retrofit.create(PbServices::class.java)
@@ -85,56 +93,54 @@ class PocketBaseBackend(
     val meId = currentUser?.id ?: error("No current user")
     val pairKey = if (meId < peerId) "${meId}_${peerId}" else "${peerId}_${meId}"
 
-    // Try to find existing room
     val existing = api.listRooms(
-        "Bearer $t",
-        """pairKey="$pairKey""""
+        bearer = "Bearer $t",
+        filter = """pairKey="$pairKey""""
     ).items.firstOrNull()
     if (existing != null) return existing
 
-    // Create a new room
-    val body: Map<String, Any> = mapOf(
+    val body = mapOf(
         "pairKey" to pairKey,
-        "type" to "direct",
-        "aId" to meId,
-        "bId" to peerId,
-        "createdBy" to meId
+        "type"    to "direct",
+        "aId"     to meId,
+        "bId"     to peerId
     )
-
     return api.createRoom("Bearer $t", body)
 }
 
 
 
+
     override suspend fun listMessages(roomId: String): List<PbMessage> {
-        val t = token ?: throw IllegalStateException("Not authenticated")
-        val meId = currentUser?.id ?: IllegalStateException("No current user")
-	val filter = """room.id = "$roomId" && (room.aId.id = "$meId" || room.bId.id = "$meId")"""
-        val resp = api.listMessages(
-            "Bearer $t",
-            filter,
-            "created"
-        )
-	return resp.items
-    }
+    val t = token ?: throw IllegalStateException("Not authenticated")
+    val meId = currentUser?.id ?: throw IllegalStateException("No current user")
+
+    // Filter by relation equals the room id
+    val resp = api.listMessages(
+        bearer = "Bearer $t",
+        filter = """room="$roomId"""",
+        sort   = "created"
+    )
+    return resp.items
+}
+
 
     override suspend fun sendMessage(roomId: String, ciphertext: String, nonce: String?): PbMessage {
     val t = token ?: error("Not authenticated")
     val meId = currentUser?.id ?: error("No current user")
 
-    val safeNonce = nonce ?: "none"
-    val algo = "plaintext"
+    val algo = if (!nonce.isNullOrBlank() && nonce != "none") "xchacha20poly1305" else "plaintext"
 
-    val body: Map<String, Any> = mapOf(
-        "room" to roomId,
-        "sender" to meId,
+    val body = mapOf(
+        "room"       to roomId,          // matches PB schema
+        "sender"     to meId,            // matches PB schema
         "ciphertext" to ciphertext,
-        "nonce" to (nonce ?: "none "),
-        "algo" to algo
+        "nonce"      to (nonce ?: "none"),
+        "algo"       to algo
     )
-
     return api.sendMessage("Bearer $t", body)
 }
+
 
 
 }

@@ -1,4 +1,5 @@
 package com.whisper.whisperandroid.data
+import com.squareup.moshi.Json
 
 data class PbAuthReq(
     val identity: String, // PocketBase expects "identity"
@@ -32,10 +33,11 @@ data class PbRoom(
 )
 data class PbMessage(
     val id: String,
-    val room: String,
-    val sender : String,
+    @Json(name = "room") val room: String,
+    @Json(name = "sender") val sender : String,
     val ciphertext: String,
     val nonce: String?,
-    val created: String
+    val created: String,
+    val algo: String?
 )
 data class PbRecordId(val id: String)

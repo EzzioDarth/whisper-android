@@ -74,6 +74,9 @@ dependencies {
     implementation("androidx.security:security-crypto-ktx:1.1.0-alpha06")
     implementation("androidx.navigation:navigation-compose:2.8.3")
     implementation("com.squareup.moshi:moshi-kotlin:1.15.1")
+    implementation("net.java.dev.jna:jna:5.13.0@aar")
+    implementation("com.squareup.okhttp3:okhttp:4.12.0")
+    implementation("com.squareup.okhttp3:logging-interceptor:4.12.0")
 
 
 }
