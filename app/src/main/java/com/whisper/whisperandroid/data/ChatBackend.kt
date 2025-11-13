@@ -23,6 +23,7 @@ interface ChatBackend {
     suspend fun login(email: String, password: String): UserSession
     suspend fun ensureKeypairAndUploadPubKey()
     fun signOut()
+    suspend fun register(email: String, username: String, password: String): PbUser
 
     suspend fun listContacts(query: String? = null, page: Int = 1, perPage: Int = 50): List<PbUser>
     suspend fun findUserByEmail(email: String): PbUser?

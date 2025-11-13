@@ -16,7 +16,13 @@ interface PbServices {
     // PocketBase login endpoint
     @POST("/api/collections/users/auth-with-password")
     suspend fun auth(@Body body: PbAuthReq): PbAuthResp
+        // 🔹 Register a new user
+    @POST("/api/collections/users/records")
+    suspend fun registerUser(
+        @Body body: Map<String, @JvmSuppressWildcards Any>
+    ): PbUser
 
+	
     // Update user info
     @PATCH("/api/collections/users/records/{id}")
     suspend fun updateUser(

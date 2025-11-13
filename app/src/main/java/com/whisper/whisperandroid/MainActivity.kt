@@ -14,6 +14,7 @@ import com.whisper.whisperandroid.ui.login.LoginScreen
 import com.whisper.whisperandroid.ui.theme.WhisperTheme
 import com.whisper.whisperandroid.ui.contacts.ContactsScreen
 import com.whisper.whisperandroid.ui.chat.ChatThreadScreen
+import com.whisper.whisperandroid.ui.register.RegisterScreen
 
 
 class MainActivity : ComponentActivity() {
@@ -27,18 +28,42 @@ class MainActivity : ComponentActivity() {
                     val nav = rememberNavController()
                     NavHost(navController = nav, startDestination = "login") {
                         composable("login") {
-                            LoginScreen(
-                                onLoginSuccess = { nav.navigate("chat") },
-                                onGoToRegister = { /* we'll wire later */ }
-                            )
-                        }
+    LoginScreen(
+        onLoginSuccess = {
+            nav.navigate("chat") {
+                popUpTo("login") { inclusive = true }
+            }
+        },
+        onGoToRegister = {
+            nav.navigate("register")
+        }
+    )
+}
                         composable("chat") {
-                            ChatScreen(
-                                onBackToAuth = { nav.popBackStack()},
-                                onStartNewChat = { nav.navigate("contacts")}
-
-                            ) }
+    ChatScreen(
+        onBackToAuth = {
+            nav.navigate("login") {
+                // remove chat from backstack so back doesn't go back into it
+                popUpTo("chat") { inclusive = true }
+            }
+        },
+        onStartNewChat = { nav.navigate("contacts") }
+    )
+}
                         // composable("register") { RegisterScreen(onRegisterSuccess = { nav.navigate("chat") }) }
+                        composable("register") {
+                        	RegisterScreen(
+        				onRegisterSuccess = {
+            // after successful registration we’re already logged in (backend.register did login)
+            					nav.navigate("chat") {
+                					popUpTo("login") { inclusive = true }
+            }
+        },
+        onBackToLogin = {
+            nav.popBackStack()
+        }
+    )
+}
 
 
                         composable("contacts") {

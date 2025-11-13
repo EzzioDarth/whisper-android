@@ -40,8 +40,6 @@ class PbRealtime(
     override fun onOpen(webSocket: WebSocket, response: Response) {
         isOpen.set(true)
         val t = tokenProvider() ?: return
-        // auth (PocketBase accepts Authorization header on subscribe too,
-        // but many builds expect an "auth" message first—send both to be safe)
         val auth = JSONObject().apply {
             put("id", "auth1")
             put("type", "auth")
@@ -54,15 +52,20 @@ class PbRealtime(
     override fun onMessage(webSocket: WebSocket, text: String) {
         try {
             val obj = JSONObject(text)
-            // Expect messages like: { "event":"create"|"update"|..., "record":{...}, "collection":"messages" , ... }
+
+            // We only care about the "messages" collection
             val collection = obj.optString("collection")
-            if (collection == "messages") {
-                val rec = obj.optJSONObject("record") ?: return
-                val roomId = rec.optString("roomId")
-                messageListeners[roomId]?.invoke(rec)
-            }
-        } catch (_: Exception) {
-            Log.w("PB-RT", "non-json ws: $text")
+            if (collection != "messages") return
+
+            val rec = obj.optJSONObject("record") ?: return
+
+            // In your schema the field is literally called "room"
+            val roomId = rec.optString("room")
+            if (roomId.isNullOrEmpty()) return
+
+            messageListeners[roomId]?.invoke(rec)
+        } catch (e: Exception) {
+            Log.w("PB-RT", "non-json ws or parse error: $text", e)
         }
     }
 
@@ -82,17 +85,20 @@ class PbRealtime(
 
     /**
      * Subscribe to messages of a specific room.
-     * Many PB versions accept topic = "messages" with a filter.
      */
     fun subscribeRoomMessages(roomId: String, onEvent: (JSONObject) -> Unit) {
         messageListeners[roomId] = onEvent
+
         val t = tokenProvider() ?: ""
         val sub = JSONObject().apply {
-            put("id", "sub-${roomId}")
+            put("id", "sub-$roomId")
             put("type", "subscribe")
             put("collection", "messages")
-            put("filter", """roomId="$roomId"""")
-            if (t.isNotBlank()) put("token", t) // some builds accept token inline
+
+            // IMPORTANT: in your schema the field is "room", not "roomId"
+            put("filter", """room="$roomId"""")
+
+            if (t.isNotBlank()) put("token", t)
         }
         ws?.send(sub.toString())
     }
@@ -100,10 +106,10 @@ class PbRealtime(
     fun unsubscribeRoom(roomId: String) {
         messageListeners.remove(roomId)
         val unsub = JSONObject().apply {
-            put("id", "unsub-${roomId}")
+            put("id", "unsub-$roomId")
             put("type", "unsubscribe")
             put("collection", "messages")
-            put("filter", """roomId="$roomId"""")
+            put("filter", """room="$roomId"""")
         }
         ws?.send(unsub.toString())
     }

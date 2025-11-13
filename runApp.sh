@@ -9,8 +9,8 @@ GPU_MODE="${GPU_MODE:-off}"            # host | swiftshader | off
 cd "$(dirname "$0")"
 
 # === Ensure Android tools are on PATH (handles both common SDK locations) ===
-if [ -d "$HOME/Android/Sdk/platform-tools" ]; then
-  export PATH="$PATH:$HOME/Android/Sdk/platform-tools:$HOME/Android/Sdk/emulator"
+if [ -d "$HOME/android-sdk/platform-tools" ]; then
+  export PATH="$PATH:$HOME/android-sdk/platform-tools:$HOME/android-sdk/emulator"
 elif [ -d "$HOME/android-sdk/platform-tools" ]; then
   export PATH="$PATH:$HOME/android-sdk/platform-tools:$HOME/android-sdk/emulator"
 fi

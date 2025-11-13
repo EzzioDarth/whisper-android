@@ -45,6 +45,23 @@ class PocketBaseBackend(
         _me = body.record
         return UserSession(userId = body.record.id, token = body.token)
     }
+        override suspend fun register(email: String, username: String, password: String): PbUser {
+        // PocketBase expects password + passwordConfirm
+        val body = mapOf(
+            "email"            to email,
+            "username"         to username,
+            "password"         to password,
+            "passwordConfirm"  to password
+        )
+
+        val user = api.registerUser(body)
+
+        // Optional but nice: automatically log the user in after registration
+        login(email, password)
+
+        return user
+    }
+
 
 
     override suspend fun ensureKeypairAndUploadPubKey() {
@@ -102,6 +119,7 @@ class PocketBaseBackend(
     val body = mapOf(
         "pairKey" to pairKey,
         "type"    to "direct",
+        "createdBy" to meId,
         "aId"     to meId,
         "bId"     to peerId
     )
