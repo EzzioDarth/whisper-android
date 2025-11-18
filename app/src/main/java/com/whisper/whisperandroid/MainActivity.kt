@@ -15,6 +15,8 @@ import com.whisper.whisperandroid.ui.theme.WhisperTheme
 import com.whisper.whisperandroid.ui.contacts.ContactsScreen
 import com.whisper.whisperandroid.ui.chat.ChatThreadScreen
 import com.whisper.whisperandroid.ui.register.RegisterScreen
+import com.whisper.whisperandroid.ui.stats.StatsScreen
+
 
 
 class MainActivity : ComponentActivity() {
@@ -39,6 +41,12 @@ class MainActivity : ComponentActivity() {
         }
     )
 }
+                        composable("stats") {
+                            StatsScreen(
+                                onBack = { nav.popBackStack() }
+                            )
+                        }
+
                         composable("chat") {
     ChatScreen(
         onBackToAuth = {
@@ -47,7 +55,8 @@ class MainActivity : ComponentActivity() {
                 popUpTo("chat") { inclusive = true }
             }
         },
-        onStartNewChat = { nav.navigate("contacts") }
+        onStartNewChat = { nav.navigate("contacts") },
+        onShowStats = { nav.navigate("stats") }
     )
 }
                         // composable("register") { RegisterScreen(onRegisterSuccess = { nav.navigate("chat") }) }
@@ -64,6 +73,8 @@ class MainActivity : ComponentActivity() {
         }
     )
 }
+
+
 
 
                         composable("contacts") {

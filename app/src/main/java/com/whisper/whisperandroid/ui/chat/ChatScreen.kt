@@ -15,7 +15,8 @@ import kotlinx.coroutines.launch
 @Composable
 fun ChatScreen(
     onBackToAuth: () -> Unit = {},
-    onStartNewChat: () -> Unit = {}
+    onStartNewChat: () -> Unit = {},
+    onShowStats: () -> Unit = {}
 ) {
     // Access the current PocketBase session
     val backend = ServiceLocator.backend
@@ -63,6 +64,11 @@ fun ChatScreen(
             Button(onClick = onStartNewChat) {
                 Text("Start new chat")
             }
+            Spacer(Modifier.height(16.dp))
+Button(onClick = onShowStats) {
+    Text("View my stats")
+}
+
             Spacer(Modifier.height(12.dp))
             Text(
                 text = "PocketBase connection active.\n" +

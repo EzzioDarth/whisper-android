@@ -119,6 +119,8 @@ class PocketBaseBackend(
 
 
 
+	   
+
 
     override suspend fun login(email: String, password: String): UserSession {
         // PocketBase expects "identity" + "password"
@@ -240,6 +242,66 @@ class PocketBaseBackend(
     )
     return api.sendMessage("Bearer $t", body)
 }
+    override suspend fun countMyMessagesInRoom(
+        roomId: String,
+        fromIso: String?,
+        toIso: String?,
+        onlyWithAttachment: Boolean
+    ): Int {
+        val t = token ?: error("Not authenticated")
+        val meId = currentUser?.id ?: error("No current user")
+
+        val conditions = mutableListOf(
+            """sender="$meId"""",
+            """room="$roomId""""
+        )
+        if (fromIso != null) {
+            conditions += """created >= "$fromIso""""
+        }
+        if (toIso != null) {
+            conditions += """created <= "$toIso""""
+        }
+        if (onlyWithAttachment) {
+            // PB treats empty file field as empty string
+            conditions += """attachment != """""
+        }
+
+        val filter = conditions.joinToString(" && ")
+        val resp = api.listMessages(
+            bearer = "Bearer $t",
+            filter = filter,
+            sort = "created"
+        )
+        return resp.totalItems
+    }
+        override suspend fun countMyMessagesBetween(
+        fromIso: String?,
+        toIso: String?
+    ): Int {
+        val t = token ?: error("Not authenticated")
+        val meId = currentUser?.id ?: error("No current user")
+
+        val conditions = mutableListOf(
+            """sender="$meId""""
+        )
+        if (fromIso != null) {
+            conditions += """created >= "$fromIso""""
+        }
+        if (toIso != null) {
+            conditions += """created <= "$toIso""""
+        }
+
+        val filter = conditions.joinToString(" && ")
+
+        val resp = api.listMessages(
+            bearer = "Bearer $t",
+            filter = filter,
+            sort = "created"
+        )
+        return resp.totalItems
+    }
+
+
     override suspend fun eraseAllMyMessages() {
         val t = token ?: error("Not authenticated")
         val meId = currentUser?.id ?: error("No current user")

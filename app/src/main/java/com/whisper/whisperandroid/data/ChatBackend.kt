@@ -40,4 +40,14 @@ interface ChatBackend {
         nonce: String?,
         attachmentUri: Uri
     ): PbMessage
+    suspend fun countMyMessagesBetween(
+        fromIso: String? = null,
+        toIso: String? = null
+    ): Int
+    suspend fun countMyMessagesInRoom(
+        roomId: String,
+        fromIso: String? = null,
+        toIso: String? = null,
+        onlyWithAttachment: Boolean = false
+    ): Int
 }
