@@ -1,32 +1,44 @@
 @file:OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
+
 package com.whisper.whisperandroid.ui.chat
 
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+//import androidx.compose.material.icons.filled.AttachFile
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.input.ImeAction
-import androidx.compose.foundation.text.KeyboardActions
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.unit.dp
 import com.whisper.whisperandroid.core.ServiceLocator
+import com.whisper.whisperandroid.data.Crypto
 import com.whisper.whisperandroid.data.PbMessage
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import org.json.JSONObject
 import java.time.OffsetDateTime
 import java.time.format.DateTimeParseException
-import org.json.JSONObject
-import com.whisper.whisperandroid.data.Crypto
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.foundation.clickable
+import android.content.Intent
+//import android.net.Uri
+import com.whisper.whisperandroid.core.PbConfig
+
+
 
 @Composable
 fun ChatThreadScreen(
@@ -43,6 +55,16 @@ fun ChatThreadScreen(
     var messages by remember { mutableStateOf<List<PbMessage>>(emptyList()) }
     var input by remember { mutableStateOf("") }
     var error by remember { mutableStateOf<String?>(null) }
+
+    // 🔹 Attachment state
+    var attachmentUri by remember { mutableStateOf<Uri?>(null) }
+
+    // File picker launcher
+    val pickAttachmentLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        attachmentUri = uri
+    }
 
     // Open (or get) the direct room, then initial load
     LaunchedEffect(peerId) {
@@ -63,7 +85,8 @@ fun ChatThreadScreen(
                 val fresh = backend.listMessages(rid)
                 val known = messages.associateBy { it.id }
                 messages = (messages + fresh.filter { it.id !in known }).distinctBy { it.id }
-            } catch (_: Exception) {}
+            } catch (_: Exception) {
+            }
             delay(2000)
         }
     }
@@ -73,17 +96,23 @@ fun ChatThreadScreen(
         val rid = roomId ?: return@LaunchedEffect
         realtime.connect()
         realtime.subscribeRoomMessages(rid) { rec: JSONObject ->
+            // NOTE: your schema uses "room" and "sender"
+            val att = rec.optString("attachment", null)
+
             val m = PbMessage(
                 id = rec.optString("id"),
-                room = rec.optString("roomId", rec.optString("room")),
-                sender = rec.optString("senderId", rec.optString("sender")),
+                room = rec.optString("room"),
+                sender = rec.optString("sender"),
                 ciphertext = rec.optString("ciphertext"),
                 nonce = rec.optString("nonce"),
                 algo = rec.optString("algo"),
-                created = rec.optString("created")
+                created = rec.optString("created"),
+                attachment = att.takeIf { !it.isNullOrBlank() }
             )
             androidx.compose.runtime.snapshots.Snapshot.withMutableSnapshot {
-                if (messages.none { it.id == m.id }) messages = messages + m
+                if (messages.none { it.id == m.id }) {
+                    messages = messages + m
+                }
             }
         }
     }
@@ -95,7 +124,39 @@ fun ChatThreadScreen(
 
     // Auto-scroll to bottom on new message
     LaunchedEffect(messages.size) {
-        if (messages.isNotEmpty()) listState.animateScrollToItem(messages.lastIndex)
+        if (messages.isNotEmpty()) {
+            listState.animateScrollToItem(messages.lastIndex)
+        }
+    }
+
+    // 🔹 Helper: send current message + optional attachment
+    fun sendCurrentMessage() {
+        val rid = roomId ?: return
+        val me = meId ?: return
+        if (input.isBlank() && attachmentUri == null) return
+
+        // Encrypt text if present, otherwise send dummy space
+        val (ct, nonceB64) = if (input.isNotBlank()) {
+            val key = Crypto.deriveRoomKey(me, peerId)
+            Crypto.encryptXChaCha(input, key)
+        } else {
+            " " to "none"
+        }
+
+        scope.launch {
+            try {
+                val sent = if (attachmentUri != null) {
+                    backend.sendMessageWithAttachment(rid, ct, nonceB64, attachmentUri!!)
+                } else {
+                    backend.sendMessage(rid, ct, nonceB64)
+                }
+                input = ""
+                attachmentUri = null
+                messages = messages + sent
+            } catch (e: Exception) {
+                error = e.localizedMessage ?: "Send failed"
+            }
+        }
     }
 
     Column(Modifier.fillMaxSize()) {
@@ -151,6 +212,39 @@ fun ChatThreadScreen(
                     time = prettyTime(m.created),
                     isMe = isMe
                 )
+
+                // 🔹 Show basic attachment indicator if present
+                if (!m.attachment.isNullOrBlank()) {
+    val context = LocalContext.current
+    Text(
+        text = "📎 Attachment: ${m.attachment}",
+        style = MaterialTheme.typography.labelSmall,
+        modifier = Modifier
+            .padding(top = 2.dp)
+            .clickable {
+                // Build PocketBase file URL
+                val base = PbConfig.BASE.trimEnd('/')
+                val token = backend.token
+
+                val url = buildString {
+                    append(base)
+                    append("/api/files/messages/")
+                    append(m.id)
+                    append("/")
+                    append(m.attachment)
+                    if (!token.isNullOrBlank()) {
+                        append("?token=")
+                        append(token)
+                    }
+                }
+
+                val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
+                context.startActivity(intent)
+            }
+    )
+}
+
+
                 Spacer(Modifier.height(6.dp))
             }
         }
@@ -170,49 +264,23 @@ fun ChatThreadScreen(
                 label = { Text("Message") },
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Send),
                 keyboardActions = KeyboardActions(
-                    onSend = {
-                        val rid = roomId ?: return@KeyboardActions
-                        val me  = meId   ?: return@KeyboardActions
-                        if (input.isBlank()) return@KeyboardActions
-
-                        
-
-                        scope.launch {
-                            try {
-                            	val key = Crypto.deriveRoomKey(me, peerId)
-                        	val (ct, nonceB64) = Crypto.encryptXChaCha(input, key)
-                                val sent = backend.sendMessage(rid, ct, nonceB64)
-                                input = ""
-                                messages = messages + sent
-                            } catch (e: Exception) {
-                                error = e.localizedMessage ?: "Send failed"
-                            }
-                        }
-                    }
+                    onSend = { sendCurrentMessage() }
                 )
             )
-            val canSend = roomId != null && input.isNotBlank()
+
+            // 📎 Attachment button
+            IconButton(onClick = { pickAttachmentLauncher.launch("*/*") }) {
+                Text("Attach file")
+            }
+
+            val canSend = roomId != null && (input.isNotBlank() || attachmentUri != null)
+
             Button(
                 enabled = canSend,
-                onClick = {
-                    val rid = roomId ?: return@Button
-                    val me  = meId   ?: return@Button
-                    if (input.isBlank()) return@Button
-
-                    val key = Crypto.deriveRoomKey(me, peerId)
-                    val (ct, nonceB64) = Crypto.encryptXChaCha(input, key)
-
-                    scope.launch {
-                        try {
-                            val sent = backend.sendMessage(rid, ct, nonceB64)
-                            input = ""
-                            messages = messages + sent
-                        } catch (e: Exception) {
-                            error = e.localizedMessage ?: "Send failed"
-                        }
-                    }
-                }
-            ) { Text("Send") }
+                onClick = { sendCurrentMessage() }
+            ) {
+                Text("Send")
+            }
         }
     }
 }
@@ -224,7 +292,7 @@ private fun MessageBubble(
     isMe: Boolean
 ) {
     val bg = if (isMe) MaterialTheme.colorScheme.primaryContainer
-             else MaterialTheme.colorScheme.surfaceVariant
+    else MaterialTheme.colorScheme.surfaceVariant
     val align = if (isMe) Arrangement.End else Arrangement.Start
 
     Row(Modifier.fillMaxWidth(), horizontalArrangement = align) {

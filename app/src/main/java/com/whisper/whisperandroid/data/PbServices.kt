@@ -11,6 +11,11 @@ import retrofit2.http.GET
 import retrofit2.http.Query
 import kotlin.jvm.JvmSuppressWildcards
 import retrofit2.http.DELETE
+import okhttp3.MultipartBody
+import okhttp3.RequestBody
+import retrofit2.http.Multipart
+import retrofit2.http.Part
+
 
 
 interface PbServices {
@@ -76,6 +81,18 @@ interface PbServices {
         @Header("Authorization") bearer: String,
         @Path("id") id: String
     )
+    @Multipart
+@POST("/api/collections/messages/records")
+suspend fun sendMessageMultipart(
+    @Header("Authorization") bearer: String,
+    @Part("room") room: RequestBody,
+    @Part("sender") sender: RequestBody,
+    @Part("ciphertext") ciphertext: RequestBody,
+    @Part("nonce") nonce: RequestBody,
+    @Part("algo") algo: RequestBody,
+    @Part attachment: MultipartBody.Part? = null
+): PbMessage
+
 
 
 }

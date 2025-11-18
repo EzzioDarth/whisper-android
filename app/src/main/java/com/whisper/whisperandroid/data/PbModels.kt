@@ -38,6 +38,7 @@ data class PbMessage(
     val ciphertext: String,
     val nonce: String?,
     val created: String,
-    val algo: String?
+    val algo: String?,
+    @Json(name = "attachment") val attachment: String? = null
 )
 data class PbRecordId(val id: String)

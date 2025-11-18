@@ -2,6 +2,9 @@ package com.whisper.whisperandroid.data
 
 import com.google.api.Page
 import retrofit2.http.Query
+import android.net.Uri
+
+
 
 data class UserSession(
     val userId: String,
@@ -31,4 +34,10 @@ interface ChatBackend {
     suspend fun listMessages(roomId: String): List<PbMessage>
     suspend fun sendMessage(roomId: String, ciphertext: String, nonce: String? = null): PbMessage
     suspend fun eraseAllMyMessages()
+    suspend fun sendMessageWithAttachment(
+        roomId: String,
+        ciphertext: String,
+        nonce: String?,
+        attachmentUri: Uri
+    ): PbMessage
 }

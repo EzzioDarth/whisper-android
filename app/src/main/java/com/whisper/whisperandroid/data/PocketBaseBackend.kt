@@ -1,13 +1,23 @@
 package com.whisper.whisperandroid.data
 
 import android.content.Context
+import android.net.Uri
+import android.provider.OpenableColumns
 
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import okhttp3.OkHttpClient
+import okhttp3.logging.HttpLoggingInterceptor
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import okhttp3.MultipartBody
+import okhttp3.RequestBody
+import okhttp3.RequestBody.Companion.asRequestBody
+import okhttp3.RequestBody.Companion.toRequestBody
 import retrofit2.Retrofit
 import retrofit2.converter.moshi.MoshiConverterFactory
-import okhttp3.logging.HttpLoggingInterceptor
+import java.io.File
+import java.io.FileOutputStream
+
 
 
 
@@ -37,6 +47,58 @@ class PocketBaseBackend(
 
     override val token: String? get() = _token
     override  val currentUser: PbUser? get() = _me
+    override suspend fun sendMessageWithAttachment(
+    roomId: String,
+    ciphertext: String,
+    nonce: String?,
+    attachmentUri: Uri
+): PbMessage {
+    val t = token ?: error("Not authenticated")
+    val meId = currentUser?.id ?: error("No current user")
+
+    val algo = if (!nonce.isNullOrBlank() && nonce != "none") {
+        "xchacha20poly1305"
+    } else {
+        "plaintext"
+    }
+
+    val resolver = appCtx.contentResolver
+
+    // Copy the content URI to a temp file
+    val tempFile = File.createTempFile("msg_att_", null, appCtx.cacheDir)
+    resolver.openInputStream(attachmentUri).use { input ->
+        FileOutputStream(tempFile).use { output ->
+            if (input != null) input.copyTo(output)
+        }
+    }
+
+    // Try to get original filename from the content resolver
+    val originalName = resolver.query(attachmentUri, null, null, null, null)?.use { cursor ->
+        val nameIndex = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
+        if (nameIndex != -1 && cursor.moveToFirst()) {
+            cursor.getString(nameIndex)
+        } else null
+    } ?: tempFile.name
+
+    val mimeType = resolver.getType(attachmentUri) ?: "application/octet-stream"
+    val fileBody = tempFile.asRequestBody(mimeType.toMediaTypeOrNull())
+    val filePart = MultipartBody.Part.createFormData("attachment", originalName, fileBody)
+
+    fun textPart(value: String): RequestBody =
+        value.toRequestBody("text/plain".toMediaTypeOrNull())
+
+    return api.sendMessageMultipart(
+        bearer = "Bearer $t",
+        room = textPart(roomId),
+        sender = textPart(meId),
+        ciphertext = textPart(ciphertext),
+        nonce = textPart(nonce ?: "none"),
+        algo = textPart(algo),
+        attachment = filePart
+    )
+}
+
+
 
     override suspend fun login(email: String, password: String): UserSession {
         // PocketBase expects "identity" + "password"
