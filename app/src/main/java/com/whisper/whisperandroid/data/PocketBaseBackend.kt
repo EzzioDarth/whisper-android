@@ -63,22 +63,41 @@ class PocketBaseBackend(
     }
 
     val resolver = appCtx.contentResolver
-
-    // Copy the content URI to a temp file
     val tempFile = File.createTempFile("msg_att_", null, appCtx.cacheDir)
-    resolver.openInputStream(attachmentUri).use { input ->
-        FileOutputStream(tempFile).use { output ->
-            if (input != null) input.copyTo(output)
+
+    var srcFile: File? = null
+
+    when (attachmentUri.scheme) {
+        "content" -> {
+            resolver.openInputStream(attachmentUri).use { input ->
+                FileOutputStream(tempFile).use { output ->
+                    if (input != null) input.copyTo(output)
+                }
+            }
+        }
+        "file" -> {
+            srcFile = File(attachmentUri.path ?: error("File URI has no path"))
+            srcFile.copyTo(tempFile, overwrite = true)
+        }
+        else -> {
+            // fallback: try using content resolver anyway
+            resolver.openInputStream(attachmentUri).use { input ->
+                FileOutputStream(tempFile).use { output ->
+                    if (input != null) input.copyTo(output)
+                }
+            }
         }
     }
 
-    // Try to get original filename from the content resolver
-    val originalName = resolver.query(attachmentUri, null, null, null, null)?.use { cursor ->
-        val nameIndex = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
-        if (nameIndex != -1 && cursor.moveToFirst()) {
-            cursor.getString(nameIndex)
-        } else null
-    } ?: tempFile.name
+    val originalName =
+        if (attachmentUri.scheme == "content") {
+            resolver.query(attachmentUri, null, null, null, null)?.use { cursor ->
+                val idx = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
+                if (idx != -1 && cursor.moveToFirst()) cursor.getString(idx) else null
+            }
+        } else {
+            srcFile?.name
+        } ?: tempFile.name
 
     val mimeType = resolver.getType(attachmentUri) ?: "application/octet-stream"
     val fileBody = tempFile.asRequestBody(mimeType.toMediaTypeOrNull())
@@ -97,6 +116,7 @@ class PocketBaseBackend(
         attachment = filePart
     )
 }
+
 
 
 

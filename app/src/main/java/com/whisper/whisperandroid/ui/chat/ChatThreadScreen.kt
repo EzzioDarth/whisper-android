@@ -37,8 +37,9 @@ import androidx.compose.foundation.clickable
 import android.content.Intent
 //import android.net.Uri
 import com.whisper.whisperandroid.core.PbConfig
-
-
+import android.media.MediaRecorder
+import android.Manifest
+import java.io.File
 
 @Composable
 fun ChatThreadScreen(
@@ -65,6 +66,41 @@ fun ChatThreadScreen(
     ) { uri: Uri? ->
         attachmentUri = uri
     }
+    val context = LocalContext.current
+
+    var recorder by remember { mutableStateOf<MediaRecorder?>(null) }
+    var isRecording by remember { mutableStateOf(false) }
+    var recordingFile by remember { mutableStateOf<File?>(null) }
+        val audioPermLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        if (granted) {
+            try {
+                val file = File(context.cacheDir, "voice_${System.currentTimeMillis()}.m4a")
+                val rec = MediaRecorder()
+
+                rec.setAudioSource(MediaRecorder.AudioSource.MIC)
+                rec.setOutputFormat(MediaRecorder.OutputFormat.MPEG_4)
+                rec.setAudioEncoder(MediaRecorder.AudioEncoder.AAC)
+                rec.setAudioEncodingBitRate(128000)
+                rec.setAudioSamplingRate(44100)
+                rec.setOutputFile(file.absolutePath)
+
+                rec.prepare()
+                rec.start()
+
+                recorder = rec
+                recordingFile = file
+                isRecording = true
+            } catch (e: Exception) {
+                error = e.localizedMessage ?: "Failed to start recording"
+            }
+        } else {
+            error = "Microphone permission denied"
+        }
+    }
+
+
 
     // Open (or get) the direct room, then initial load
     LaunchedEffect(peerId) {
@@ -120,6 +156,14 @@ fun ChatThreadScreen(
     // Unsubscribe when leaving this screen
     DisposableEffect(roomId) {
         onDispose { roomId?.let { realtime.unsubscribeRoom(it) } }
+    }
+    DisposableEffect(Unit) {
+        onDispose {
+            recorder?.let {
+                try { it.stop() } catch (_: Exception) {}
+                it.release()
+            }
+        }
     }
 
     // Auto-scroll to bottom on new message
@@ -270,7 +314,39 @@ fun ChatThreadScreen(
 
             // 📎 Attachment button
             IconButton(onClick = { pickAttachmentLauncher.launch("*/*") }) {
-                Text("Attach file")
+                Text("Attach")
+            }
+            IconButton(onClick = {
+                if (!isRecording) {
+                    // start recording (permission will trigger recorder)
+                    audioPermLauncher.launch(Manifest.permission.RECORD_AUDIO)
+                } else {
+                    // stop and send
+                    val rec = recorder
+                    val file = recordingFile
+                    if (rec != null && file != null) {
+                        try { rec.stop() } catch (_: Exception) {}
+                        rec.release()
+                        recorder = null
+                        isRecording = false
+
+                        val rid = roomId ?: return@IconButton
+
+                        scope.launch {
+                            try {
+                                val uri = Uri.fromFile(file)
+                                val (ct, nonce) = " " to "none"  // empty text
+                                val sent = backend.sendMessageWithAttachment(rid, ct, nonce, uri)
+                                messages = messages + sent
+                                recordingFile = null
+                            } catch (e: Exception) {
+                                error = e.localizedMessage ?: "Failed to send voice message"
+                            }
+                        }
+                    }
+                }
+            }) {
+                Text(if (isRecording) "Stop" else "Voice")
             }
 
             val canSend = roomId != null && (input.isNotBlank() || attachmentUri != null)
@@ -281,6 +357,7 @@ fun ChatThreadScreen(
             ) {
                 Text("Send")
             }
+            
         }
     }
 }
