@@ -10,6 +10,8 @@ import retrofit2.http.Path
 import retrofit2.http.GET
 import retrofit2.http.Query
 import kotlin.jvm.JvmSuppressWildcards
+import retrofit2.http.DELETE
+
 
 interface PbServices {
 
@@ -59,12 +61,21 @@ interface PbServices {
     suspend fun listMessages(
         @Header("Authorization") bearer: String,
         @Query("filter") filter: String,
-        @Query("sort") sort: String = "created"
+        @Query("sort") sort: String = "created",
+        @Query("page") page: Int = 1,
+    	@Query("perPage") perPage: Int = 200
     ): PbListResp<PbMessage>
     @POST("/api/collections/messages/records")
     suspend fun sendMessage(
         @Header("Authorization") bearer: String,
         @Body body: Map<String, @JvmSuppressWildcards Any>
     ): PbMessage
+    //delete messages 
+	@DELETE("/api/collections/messages/records/{id}")
+    suspend fun deleteMessage(
+        @Header("Authorization") bearer: String,
+        @Path("id") id: String
+    )
+
 
 }

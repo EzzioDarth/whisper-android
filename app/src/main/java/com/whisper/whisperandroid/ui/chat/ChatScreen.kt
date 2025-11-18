@@ -8,6 +8,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.whisper.whisperandroid.core.ServiceLocator
 import com.whisper.whisperandroid.core.PbConfig
+import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.launch
+
 
 @Composable
 fun ChatScreen(
@@ -16,6 +19,10 @@ fun ChatScreen(
 ) {
     // Access the current PocketBase session
     val backend = ServiceLocator.backend
+    val scope = rememberCoroutineScope()
+    var eraseLoading by remember { mutableStateOf(false) }
+    var eraseError by remember { mutableStateOf<String?>(null) }
+    var eraseResult by remember { mutableStateOf<String?>(null) }
     //safe guard to not load back the chat screen in case of null token
     //suggested by chatgpt
     LaunchedEffect(Unit) {
@@ -62,6 +69,47 @@ fun ChatScreen(
                         "Backend: ${PbConfig.BASE}",
                 style = MaterialTheme.typography.bodyMedium
             )
+            Spacer(Modifier.height(32.dp))
+            Button(
+                enabled = !eraseLoading,
+                onClick = {
+                    eraseError = null
+                    eraseResult = null
+                    eraseLoading = true
+
+                    scope.launch {
+                        try {
+                            backend.eraseAllMyMessages()
+                            eraseResult = "All messages you sent have been erased from the server."
+                        } catch (e: Exception) {
+                            eraseError = e.localizedMessage ?: "Failed to erase messages."
+                        } finally {
+                            eraseLoading = false
+                        }
+                    }
+                }
+            ) {
+                Text(if (eraseLoading) "Erasing…" else "Erase all my messages")
+            }
+
+            eraseError?.let {
+                Spacer(Modifier.height(8.dp))
+                Text(it, color = MaterialTheme.colorScheme.error)
+            }
+
+            eraseResult?.let {
+                Spacer(Modifier.height(8.dp))
+                Text(it, color = MaterialTheme.colorScheme.primary)
+            }
+
+            Spacer(Modifier.height(32.dp))
+
+            Text(
+                text = "PocketBase connection active.\n" +
+                        "Backend: ${PbConfig.BASE}",
+                style = MaterialTheme.typography.bodyMedium
+            )
+
             Spacer(Modifier.height(32.dp))
             Button(
                 onClick = {

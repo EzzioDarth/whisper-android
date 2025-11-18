@@ -158,6 +158,36 @@ class PocketBaseBackend(
     )
     return api.sendMessage("Bearer $t", body)
 }
+    override suspend fun eraseAllMyMessages() {
+        val t = token ?: error("Not authenticated")
+        val meId = currentUser?.id ?: error("No current user")
+
+        var pageNum = 1
+        val perPage = 200
+
+        while (true) {
+            val resp = api.listMessages(
+                bearer = "Bearer $t",
+                filter = """sender="$meId"""",
+                sort = "created",
+                page = pageNum,
+                perPage = perPage
+            )
+
+            val items = resp.items
+            if (items.isEmpty()) break
+
+            for (m in items) {
+                api.deleteMessage("Bearer $t", m.id)
+            }
+
+            // If we got less than a full page, we're done
+            if (items.size < perPage) break
+
+            pageNum++
+        }
+    }
+
 
 
 

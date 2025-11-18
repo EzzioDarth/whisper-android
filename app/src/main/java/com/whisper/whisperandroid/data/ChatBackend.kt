@@ -30,4 +30,5 @@ interface ChatBackend {
     suspend fun openOrCreateDirectRoom(peerId: String): PbRoom
     suspend fun listMessages(roomId: String): List<PbMessage>
     suspend fun sendMessage(roomId: String, ciphertext: String, nonce: String? = null): PbMessage
+    suspend fun eraseAllMyMessages()
 }
