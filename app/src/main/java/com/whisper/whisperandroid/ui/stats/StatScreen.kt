@@ -177,7 +177,10 @@ fun StatsScreen(
                 val t = textCount ?: 0
                 val m = mediaCount ?: 0
                 val max = (maxOf(t, m, 1)).toFloat()
-                val chartHeight = 160.dp
+
+                // 🔹 limit bar height, add space for labels
+                val barMaxHeight = 120.dp
+                val chartTotalHeight = barMaxHeight + 40.dp
 
                 Text(
                     "Messages you sent to ${selectedUser?.username ?: selectedUser?.email ?: "user"}",
@@ -194,7 +197,7 @@ fun StatsScreen(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(chartHeight),
+                        .height(chartTotalHeight),
                     horizontalArrangement = Arrangement.SpaceEvenly,
                     verticalAlignment = Alignment.Bottom
                 ) {
@@ -203,7 +206,7 @@ fun StatsScreen(
                         Box(
                             modifier = Modifier
                                 .width(40.dp)
-                                .height((t / max * chartHeight.value).dp)
+                                .height((t / max * barMaxHeight.value).dp)
                                 .background(MaterialTheme.colorScheme.primary)
                         )
                         Spacer(Modifier.height(4.dp))
@@ -216,7 +219,7 @@ fun StatsScreen(
                         Box(
                             modifier = Modifier
                                 .width(40.dp)
-                                .height((m / max * chartHeight.value).dp)
+                                .height((m / max * barMaxHeight.value).dp)
                                 .background(MaterialTheme.colorScheme.secondary)
                         )
                         Spacer(Modifier.height(4.dp))
