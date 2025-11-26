@@ -300,6 +300,53 @@ class PocketBaseBackend(
         )
         return resp.totalItems
     }
+    override suspend fun listMyRooms(): List<PbRoom> {
+    val t = token ?: error("Not authenticated")
+    val meId = currentUser?.id ?: error("No current user")
+
+    val filter = """members.id ?= "$meId""""
+
+    val resp = api.listRooms(
+        bearer = "Bearer $t",
+        filter = filter
+    )
+
+    return resp.items
+}
+
+    
+override suspend fun createGroupRoom(
+    name: String,
+    memberIds: List<String>
+): PbRoom {
+    val t = token ?: error("Not authenticated")
+    val meId = currentUser?.id ?: error("No current user")
+
+    // Include myself in the members list
+    val allMembers = (memberIds + meId).distinct()
+
+    // pairKey must be unique; for groups we can just use a random UUID
+    val pairKey = "group:" + java.util.UUID.randomUUID().toString()
+
+    val body = mapOf(
+        "type" to "group",
+        "createdBy" to meId,
+        "pairKey" to pairKey,
+        // aId / bId are still required by schema + rules,
+        // so we set them to the current user to satisfy createRule.
+        "aId" to meId,
+        "bId" to meId,
+        // multi-relation field we added in chat_rooms
+        "members" to allMembers,
+        // optional: if you later add a "name" field for groups
+        // "name" to name
+    )
+
+    return api.createRoom(
+        bearer = "Bearer $t",
+        body = body
+    )
+}
 
 
     override suspend fun eraseAllMyMessages() {

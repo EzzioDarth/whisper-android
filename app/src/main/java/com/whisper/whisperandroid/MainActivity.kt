@@ -16,6 +16,9 @@ import com.whisper.whisperandroid.ui.contacts.ContactsScreen
 import com.whisper.whisperandroid.ui.chat.ChatThreadScreen
 import com.whisper.whisperandroid.ui.register.RegisterScreen
 import com.whisper.whisperandroid.ui.stats.StatsScreen
+import com.whisper.whisperandroid.ui.group.GroupCreateScreen
+import com.whisper.whisperandroid.ui.group.GroupChatScreen
+
 
 
 
@@ -56,7 +59,9 @@ class MainActivity : ComponentActivity() {
             }
         },
         onStartNewChat = { nav.navigate("contacts") },
-        onShowStats = { nav.navigate("stats") }
+        onShowStats = { nav.navigate("stats") },
+        onStartNewGroup = { nav.navigate("groupCreate") },
+        onOpenGroup = { roomId -> nav.navigate("group/$roomId") },
     )
 }
                         // composable("register") { RegisterScreen(onRegisterSuccess = { nav.navigate("chat") }) }
@@ -76,6 +81,22 @@ class MainActivity : ComponentActivity() {
 
 
 
+			composable("groupCreate") {
+    GroupCreateScreen(
+        onBack = { nav.popBackStack() },
+        onGroupCreated = { roomId ->
+            nav.navigate("group/$roomId")
+        }
+    )
+}
+
+composable("group/{roomId}") { backStackEntry ->
+    val roomId = backStackEntry.arguments?.getString("roomId") ?: return@composable
+    GroupChatScreen(
+        roomId = roomId,
+        onBack = { nav.popBackStack() }
+    )
+}
 
                         composable("contacts") {
                             ContactsScreen(

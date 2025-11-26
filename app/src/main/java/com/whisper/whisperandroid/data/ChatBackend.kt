@@ -50,4 +50,12 @@ interface ChatBackend {
         toIso: String? = null,
         onlyWithAttachment: Boolean = false
     ): Int
+    suspend fun listMyRooms(): List<PbRoom>
+
+suspend fun createGroupRoom(
+    name: String,
+    memberIds: List<String>
+): PbRoom
+	
+    
 }

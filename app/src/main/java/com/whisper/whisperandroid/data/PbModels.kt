@@ -29,7 +29,11 @@ data class PbRoom(
     val pairKey: String,
     val type: String? = null,
     val aId: String? = null,
-    val bId: String? = null
+    val bId: String? = null,
+    val members: List<String> = emptyList()
+)
+data class PbRoomListResp(
+    val items: List<PbRoom>
 )
 data class PbMessage(
     val id: String,
