@@ -92,6 +92,12 @@ suspend fun sendMessageMultipart(
     @Part("algo") algo: RequestBody,
     @Part attachment: MultipartBody.Part? = null
 ): PbMessage
+@PATCH("api/collections/users/records/{id}")
+suspend fun updateUser(
+    @Header("Authorization") bearer: String,
+    @Path("id") userId: String,
+    @Body body: Map<String, @JvmSuppressWildcards Any?>
+): PbUser
 
 
 

@@ -11,7 +11,8 @@ data class PbUser(
     val email: String? = null,
     val username: String? = null,
     val displayName: String? = null,
-    val pubKey: String? = null
+    val pubKey: String? = null,
+    val recoveryHash: String?
 )
 
 data class PbAuthResp(

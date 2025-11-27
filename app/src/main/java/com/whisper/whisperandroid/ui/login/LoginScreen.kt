@@ -13,6 +13,7 @@ import com.whisper.whisperandroid.core.ServiceLocator
 @Composable
 fun LoginScreen(
     onLoginSuccess: () -> Unit,
+    onForgotPassword: () -> Unit,
     onGoToRegister: () -> Unit
 ) {
     val scope = rememberCoroutineScope()
@@ -76,6 +77,13 @@ fun LoginScreen(
                 onClick = { signIn() },
                 modifier = Modifier.fillMaxWidth()
             ) { Text(if (loading) "Signing in..." else "Sign In") }
+            TextButton(
+                onClick = onForgotPassword,
+                enabled = !loading
+            ) {
+                Text("Forgot password?")
+            }
+
 
             TextButton(onClick = onGoToRegister, enabled = !loading) {
                 Text("No account? Create one")
